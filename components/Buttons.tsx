@@ -5,12 +5,14 @@ import Colors from '@/data/Colors';
 type ButtonProps = {
   text: string;
   onPress: () => void;
+  disabled?: boolean;
 };
 
-export default function Buttons({ text, onPress }: ButtonProps) {
+export default function Buttons({ text, onPress, disabled }: ButtonProps) {
   return (
     <TouchableOpacity
       onPress={onPress}
+      disabled={disabled}
       style={{
         padding: 15,
         backgroundColor: Colors.PRIMARY,

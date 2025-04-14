@@ -1,24 +1,38 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { View, Text, Pressable, Image, StyleSheet } from 'react-native';
 import Fields from '../components/InputFields';
 import Buttons from '../components/Buttons';
-import { loginUser } from '../server/auth';
+import { loginUser, storeAuthToken } from '../server/auth';
 import { router } from 'expo-router';
 import Colors from '@/data/Colors';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { ToastContext, ToastContextType } from '../components/ToastManager';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const toastContext = useContext<ToastContextType | undefined>(ToastContext);
 
   const handleLogin = async () => {
+    if (!email || !password) {
+      toastContext?.showToast('Please enter both email and password', 'error');
+      return false;
+    }
+
+    setIsLoading(true);
     try {
       const response = await loginUser(email, password);
-      await AsyncStorage.setItem('token', response.data.token);
+      await storeAuthToken(response.data.token);
       return true;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Login failed:', error);
+      toastContext?.showToast(
+        error.message || 'Login failed. Please try again.',
+        'error'
+      );
       return false;
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -26,10 +40,11 @@ export default function LoginPage() {
     try {
       const success = await handleLogin();
       if (success) {
-        router.push('/Home');
+        toastContext?.showToast('Login successful! Redirecting...', 'success');
+        setTimeout(() => router.replace('/pages/Home'), 1000);
       }
     } catch (error) {
-      console.error('Login Failed:', error);
+      console.error('Login process error:', error);
     }
   };
 
@@ -49,6 +64,7 @@ export default function LoginPage() {
           value={email}
           onChangeText={setEmail}
           placeholder="Enter email"
+          keyboardType="email-address"
         />
       </View>
 
@@ -62,7 +78,11 @@ export default function LoginPage() {
       </View>
 
       <View style={styles.buttonContainer}>
-        <Buttons text="LogIn" onPress={handleSignin} />
+        <Buttons
+          text={isLoading ? 'Logging in...' : 'LogIn'}
+          onPress={handleSignin}
+          disabled={isLoading}
+        />
       </View>
 
       <Pressable onPress={() => router.push('/SignUpPage')}>

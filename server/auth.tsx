@@ -1,21 +1,65 @@
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 
-export const API_BASE_URL = 'http://192.168.0.105:7788/api';
+export const API_BASE_URL = 'http://192.168.0.101:7788/api';
+// export const API_BASE_URL = 'http://192.168.1.33:7788/api';
+// export const API_BASE_URL = 'http://localhost:7788/api';
 
-export const getAuthToken = async (): Promise<string | null> => {
-  const token = await SecureStore.getItemAsync('token');
-  return token || null;
+export const storeAuthToken = async (token: string): Promise<void> => {
+  try {
+    await SecureStore.setItemAsync('token', token);
+    console.log('Token stored successfully');
+  } catch (error) {
+    console.error('Failed to store token:', error);
+    throw new Error('Failed to save authentication token');
+  }
+};
+
+export const getAuthToken = async (): Promise<string> => {
+  try {
+    const token = await SecureStore.getItemAsync('token');
+    if (!token) {
+      throw new Error('No token found. User may not be authenticated.');
+    }
+    return token;
+  } catch (error) {
+    console.error('Failed to retrieve token:', error);
+    throw error; 
+  }
 };
 
 export const getAuthHeaders = async (): Promise<Record<string, string>> => {
   const token = await getAuthToken();
-  return token ? { Authorization: `Bearer ${token}` } : {};
+  return { 
+    Authorization: `Bearer ${token}`,
+    'Content-Type': 'application/json'
+  };
 };
 
-export const loginUser = (email: string, password: string) =>
-  axios.post(`${API_BASE_URL}/auth/signin`, { email, password });
+export const loginUser = async (email: string, password: string) => {
+  try {
+    const response = await axios.post(`${API_BASE_URL}/auth/signin`, { 
+      email, 
+      password 
+    });
+    
+    if (!response.data?.token) {
+      throw new Error('Authentication succeeded but no token received');
+    }
+    
+    return response;
+  } catch (error) {
+    console.error('Login API error:', error);
+    if (axios.isAxiosError(error)) {
+      throw new Error(error.response?.data?.message || 'Login failed');
+    }
+    throw error;
+  }
+};
 
+export const clearAuthToken = async (): Promise<void> => {
+  await SecureStore.deleteItemAsync('token');
+};
 export const signupUser = (
   name: string,
   email: string,
@@ -61,6 +105,26 @@ export const getAllUsers = async (): Promise<any[]> => {
     throw new Error(response.data.message || 'Failed to fetch users');
   }
   return response.data.data;
+};
+export const getUserById = async (userId: string): Promise<any> => {
+  const headers = await getAuthHeaders();
+  const response = await axios.get(`${API_BASE_URL}/users/${userId}`, {
+    headers,
+  });
+
+  if (!response.data.success) {
+    throw new Error(response.data.message || 'Failed to fetch user');
+  }
+
+  return response.data.data;
+};
+
+export const deleteUser = async (userId: string): Promise<any> => {
+  const headers = await getAuthHeaders();
+  const response = await axios.delete(`${API_BASE_URL}/users/${userId}`, {
+    headers,
+  });
+  return response.data;
 };
 
 type FolderType = {

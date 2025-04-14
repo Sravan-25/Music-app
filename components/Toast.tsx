@@ -11,7 +11,7 @@ export interface ToastProps {
 const Toast: React.FC<ToastProps> = ({
   message,
   type,
-  duration = 3000,
+  duration = 2000,
   onDismiss,
 }) => {
   const [fadeAnim] = useState(new Animated.Value(0));
@@ -19,14 +19,14 @@ const Toast: React.FC<ToastProps> = ({
   useEffect(() => {
     Animated.timing(fadeAnim, {
       toValue: 1,
-      duration: 300,
+      duration: 200,
       useNativeDriver: true,
     }).start();
 
     const timer = setTimeout(() => {
       Animated.timing(fadeAnim, {
         toValue: 0,
-        duration: 300,
+        duration: 200,
         useNativeDriver: true,
       }).start(() => {
         if (onDismiss) onDismiss();

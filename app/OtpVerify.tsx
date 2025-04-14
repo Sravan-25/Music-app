@@ -1,4 +1,3 @@
-// OtpVerify.tsx
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
@@ -14,7 +13,7 @@ import axios from 'axios';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import OtpFields from '../components/OtpFields';
 
-const API_URL = 'http://192.168.0.105:7788';
+const API_URL = 'http://192.168.1.33:7788';
 
 const VerifyEmail = () => {
   const [code, setCode] = useState<string[]>(['', '', '', '']);
